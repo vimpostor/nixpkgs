@@ -34,6 +34,46 @@ rec {
   */
   flakeExposed = import ./flake-systems.nix { };
 
+  /*
+    Apply for all systems a function that takes the system as argument
+    and returns an attribute set. Using the system as the key, merge the
+    results into one attribute set. Then swap the top-level attributes with
+    their direct descendants.
+
+
+    # Inputs
+
+    `systems`
+
+    : The list of systems
+
+    `f`
+
+    : The function to apply for every system
+
+    # Type
+
+    ```
+    eachSystem :: [String] -> (String -> AttrSet) -> AttrSet
+    ```
+
+    # Examples
+    :::{.example}
+    ## `lib.systems.eachSystem` usage example
+
+    ```nix
+    lib.systems.eachSystem lib.systems.flakeExposed (system: {
+      packages = {
+        default = legacyPackages.${system}.hello;
+      }
+    })
+    => { packages = { x86_64-linux = { default = ...; }; aarch64-linux = { default = ...; }; ... } }
+    ```
+
+    :::
+  */
+  eachSystem = with lib; systems: f: foldAttrs mergeAttrs {} (map (s: mapAttrs (_: v: { ${s} = v; }) (f s)) systems);
+
   # Elaborate a `localSystem` or `crossSystem` so that it contains everything
   # necessary.
   #
